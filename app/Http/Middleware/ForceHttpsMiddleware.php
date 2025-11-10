@@ -15,9 +15,14 @@ class ForceHttpsMiddleware
      */
     public function handle(Request $request, Closure $next): Response
     {
-        // Force HTTPS only in production environment
-        if (app()->environment('production') && !$request->secure()) {
-            return redirect()->secure($request->getRequestUri(), 301);
+        // Trust proxy headers for HTTPS detection
+        if (app()->environment('production')) {
+            $request->setTrustedProxies(['*'], Request::HEADER_X_FORWARDED_FOR | Request::HEADER_X_FORWARDED_HOST | Request::HEADER_X_FORWARDED_PORT | Request::HEADER_X_FORWARDED_PROTO);
+            
+            // Only redirect if we're certain it's not HTTPS
+            if (!$request->secure() && !$request->header('X-Forwarded-Proto') === 'https') {
+                return redirect()->secure($request->getRequestUri(), 301);
+            }
         }
 
         return $next($request);
