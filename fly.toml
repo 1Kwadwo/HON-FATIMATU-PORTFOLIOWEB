@@ -1,4 +1,4 @@
-app = "your-app-name"
+app = "fatimatu-portfolio"
 primary_region = "iad"
 
 [build]
