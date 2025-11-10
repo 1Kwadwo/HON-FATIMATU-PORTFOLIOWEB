@@ -20,7 +20,7 @@ class ForceHttpsMiddleware
             $request->setTrustedProxies(['*'], Request::HEADER_X_FORWARDED_FOR | Request::HEADER_X_FORWARDED_HOST | Request::HEADER_X_FORWARDED_PORT | Request::HEADER_X_FORWARDED_PROTO);
             
             // Only redirect if we're certain it's not HTTPS
-            if (!$request->secure() && !$request->header('X-Forwarded-Proto') === 'https') {
+            if (!$request->secure() && $request->header('X-Forwarded-Proto') !== 'https') {
                 return redirect()->secure($request->getRequestUri(), 301);
             }
         }
