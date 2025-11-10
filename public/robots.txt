@@ -1,0 +1,7 @@
+User-agent: *
+Disallow: /admin/
+Disallow: /dashboard
+Disallow: /settings/
+
+# Sitemap location (update with your actual domain)
+Sitemap: /sitemap.xml

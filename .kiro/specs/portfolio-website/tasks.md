@@ -1,0 +1,430 @@
+# Implementation Plan
+
+- [x] 1. Database setup and migrations
+  - Create migration for gallery_items table with title, caption, category, image_path, sort_order, is_published fields
+  - Create migration for news_articles table with title, slug, excerpt, content, featured_image_path, author_id, status, published_at, meta fields
+  - Create migration for pages table with slug, title, content, meta fields, updated_by
+  - Create migration for page_revisions table with page_id, content, updated_by, created_at
+  - Create migration for initiatives table with title, slug, descriptions, featured_image_path, impact_stats JSON, sort_order, is_published
+  - Create migration for contact_submissions table with name, email, subject, message, is_read, ip_address, user_agent
+  - _Requirements: 1.1, 2.1, 3.1, 4.1, 5.1, 7.1, 8.1, 9.1, 10.1_
+
+- [x] 2. Create Eloquent models with relationships and scopes
+  - [x] 2.1 Implement GalleryItem model with published, byCategory, ordered scopes and image URL accessor
+    - Add fillable fields, casts for boolean and integer types
+    - Implement scopePublished, scopeByCategory, scopeOrdered methods
+    - Add getImageUrlAttribute accessor for public URL generation
+    - Implement deleteWithImage method to remove file and database record
+    - _Requirements: 3.1, 3.2, 7.2, 7.4_
+  - [x] 2.2 Implement NewsArticle model with author relationship, published scope, and reading time accessor
+    - Add fillable fields and datetime cast for published_at
+    - Implement author() belongsTo relationship
+    - Add scopePublished and scopeRecent query scopes
+    - Implement getFeaturedImageUrlAttribute and getReadingTimeAttribute accessors
+    - Add publish() and unpublish() methods for status management
+    - _Requirements: 4.1, 4.2, 4.3, 8.2, 8.3, 8.4_
+  - [x] 2.3 Implement Page model with revisions relationship and revision saving
+    - Add fillable fields for content management
+    - Implement revisions() hasMany relationship
+    - Implement updatedBy() belongsTo relationship
+    - Add saveRevision() method to create revision history entries
+    - _Requirements: 10.1, 10.3, 10.5_
+  - [x] 2.4 Implement Initiative model with published and ordered scopes
+    - Add fillable fields with JSON cast for impact_stats
+    - Implement scopePublished and scopeOrdered methods
+    - Add getFeaturedImageUrlAttribute accessor
+    - _Requirements: 2.1, 2.2, 2.3, 2.4_
+  - [x] 2.5 Implement ContactSubmission model with unread scope and markAsRead method
+    - Add fillable fields with boolean cast for is_read
+    - Implement scopeUnread and scopeRecent query scopes
+    - Add markAsRead() method to update read status
+    - _Requirements: 5.2, 9.1, 9.2, 9.3_
+
+- [x] 3. Create service classes for business logic
+  - [x] 3.1 Implement ImageService for upload, delete, resize, and thumbnail generation
+    - Create upload() method with file validation and unique filename generation
+    - Implement delete() method to remove files from storage
+    - Add resize() method using Intervention Image for optimization
+    - Implement generateThumbnail() method for gallery previews
+    - _Requirements: 3.4, 7.2, 7.4, 8.2_
+  - [x] 3.2 Implement NewsService for article CRUD operations
+    - Create createArticle() method with slug generation
+    - Implement updateArticle() method with featured image handling
+    - Add deleteArticle() method to remove article and associated files
+    - Implement publishArticle() method to set status and published_at timestamp
+    - _Requirements: 8.2, 8.3, 8.4, 8.5_
+  - [x] 3.3 Implement PageService for content management and revision history
+    - Create updatePage() method that saves content and creates revision
+    - Implement getRevisionHistory() method to retrieve last 10 revisions
+    - Add restoreRevision() method to revert to previous content version
+    - _Requirements: 10.2, 10.3, 10.5_
+
+- [x] 4. Set up admin authentication and middleware
+  - Create AdminMiddleware to restrict access to authenticated users
+  - Configure admin routes group with auth and admin middleware
+  - Update Fortify configuration for admin login redirect
+  - Create admin dashboard route and controller
+  - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5_
+
+- [x] 5. Build admin gallery management
+  - [x] 5.1 Create GalleryController with index, create, store, edit, update, destroy methods
+    - Implement index() to display all gallery items with thumbnails
+    - Create store() method with image upload validation and ImageService integration
+    - Add update() method for caption and category editing
+    - Implement destroy() method using deleteWithImage()
+    - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5_
+  - [x] 5.2 Create admin gallery views with upload form and item listing
+    - Build gallery/index.blade.php with item grid and filter controls
+    - Create gallery/create.blade.php with image upload form
+    - Build gallery/edit.blade.php for caption and category editing
+    - Add thumbnail display and delete confirmation modal
+    - _Requirements: 7.1, 7.2, 7.5_
+
+- [x] 6. Build admin news management
+  - [x] 6.1 Create NewsController with full CRUD and publish methods
+    - Implement index() to list all articles with status and date
+    - Create store() method with slug auto-generation from title
+    - Add update() method with featured image upload handling
+    - Implement publish() method to change status and set published_at
+    - Add destroy() method using NewsService
+    - _Requirements: 8.1, 8.2, 8.3, 8.4, 8.5_
+  - [x] 6.2 Create admin news views with rich text editor
+    - Build news/index.blade.php with article list and status indicators
+    - Create news/create.blade.php with Trix editor integration
+    - Build news/edit.blade.php with all article fields
+    - Add featured image upload preview
+    - Implement draft/publish toggle button
+    - _Requirements: 8.1, 8.2, 8.3, 8.4_
+
+- [x] 7. Build admin page management
+  - [x] 7.1 Create PageController with edit, update, and revisions methods
+    - Implement index() to list editable pages (About, Initiatives)
+    - Create edit() method to display page editor
+    - Add update() method using PageService to save content and revision
+    - Implement revisions() method to display revision history
+    - _Requirements: 10.1, 10.2, 10.3, 10.5_
+  - [x] 7.2 Create admin page editor views with revision history
+    - Build pages/index.blade.php listing editable pages
+    - Create pages/edit.blade.php with Trix editor for content
+    - Add image upload capability within content editor
+    - Build pages/revisions.blade.php showing last 10 revisions with restore option
+    - _Requirements: 10.1, 10.2, 10.4, 10.5_
+
+- [x] 8. Build admin contact submissions management
+  - [x] 8.1 Create ContactSubmissionController with index, show, markAsRead, destroy methods
+    - Implement index() with filtering for unread/read/all submissions
+    - Create show() method to display full message content
+    - Add markAsRead() method to update read status
+    - Implement destroy() method for deletion
+    - _Requirements: 9.1, 9.2, 9.3, 9.4_
+  - [x] 8.2 Create admin contact views with inbox interface
+    - Build contacts/index.blade.php with submission list and filters
+    - Create contacts/show.blade.php for full message display
+    - Add unread count badge on admin dashboard
+    - Implement mark as read button and delete confirmation
+    - _Requirements: 9.1, 9.2, 9.3, 9.5_
+
+- [x] 9. Build admin dashboard
+  - Create DashboardController index method with statistics
+  - Display counts for total gallery items, published articles, unread contacts, published initiatives
+  - Show recent contact submissions (last 5)
+  - Add quick action links to main admin sections
+  - _Requirements: 6.2, 9.5_
+
+- [x] 10. Create public homepage
+  - [x] 10.1 Implement PublicController home method
+    - Query featured news article (most recent published)
+    - Retrieve homepage hero image and tagline from pages table
+    - Pass mission statement content to view
+    - _Requirements: 11.1, 11.2, 11.3, 11.4_
+  - [x] 10.2 Build home.blade.php view with hero banner and featured content
+    - Create full-width hero section with image and tagline overlay
+    - Display mission statement with primary blue and accent gold styling
+    - Add quick navigation cards to About, Initiatives, News sections
+    - Implement featured story section with image and summary
+    - Add fade-in scroll animations using Intersection Observer
+    - _Requirements: 11.1, 11.2, 11.3, 11.4, 11.5_
+
+- [x] 11. Create public about page
+  - [x] 11.1 Implement PublicController about method
+    - Retrieve about page content from pages table by slug
+    - Pass page data with meta information to view
+    - _Requirements: 1.1, 1.2, 1.3_
+  - [x] 11.2 Build about.blade.php with biography sections and timeline
+    - Display early life, education, career roles sections
+    - Implement chronological timeline with milestones
+    - Use Playfair Display for headings and Poppins for body text
+    - Add professional photographs with proper spacing
+    - Ensure responsive layout for mobile, tablet, desktop
+    - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5_
+
+- [x] 12. Create public initiatives section
+  - [x] 12.1 Implement PublicController initiatives and initiativeDetail methods
+    - Query all published initiatives ordered by sort_order
+    - Retrieve single initiative by slug for detail page
+    - Pass impact statistics to views
+    - _Requirements: 2.1, 2.2, 2.3, 2.4_
+  - [x] 12.2 Build initiatives.blade.php with card grid layout
+    - Display initiative cards in responsive grid (1/2/3 columns)
+    - Show title, short description, featured image for each card
+    - Add link to full detail page
+    - Display key impact statistics on cards
+    - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5_
+  - [x] 12.3 Build initiative-detail.blade.php for full initiative information
+    - Display featured image, title, full description
+    - Show detailed impact statistics with visual formatting
+    - Add social sharing buttons
+    - Implement breadcrumb navigation
+    - _Requirements: 2.3, 2.4_
+
+- [x] 13. Create public gallery section
+  - [x] 13.1 Implement PublicController gallery method
+    - Query all published gallery items
+    - Support category filtering via query parameter
+    - Order items by sort_order
+    - _Requirements: 3.1, 3.2_
+  - [x] 13.2 Build gallery.blade.php with masonry grid and lightbox
+    - Display gallery items in responsive masonry or grid layout
+    - Add category filter buttons (All, Events, Community, Official Duties)
+    - Implement lazy loading for images
+    - Create lightbox modal for full-size image view with caption
+    - Add keyboard navigation (arrow keys, escape) for lightbox
+    - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5_
+  - [x] 13.3 Create GalleryFilter Livewire component for dynamic filtering
+    - Add category property and items collection
+    - Implement filterByCategory() method to update items without page reload
+    - Wire up filter buttons to component method
+    - _Requirements: 3.2_
+
+- [x] 14. Create public news section
+  - [x] 14.1 Implement PublicController news and newsDetail methods
+    - Query published articles in reverse chronological order
+    - Paginate results (12 per page)
+    - Retrieve single article by slug for detail page
+    - Increment view count on article detail page
+    - _Requirements: 4.1, 4.2, 4.3_
+  - [x] 14.2 Build news/index.blade.php with article listing
+    - Display article cards with featured image, title, excerpt, date
+    - Add "Read More" link to each card
+    - Implement pagination controls
+    - Add newsletter subscription form
+    - _Requirements: 4.1, 4.2, 4.5_
+  - [x] 14.3 Build news/show.blade.php for full article display
+    - Display featured image, title, publication date, full content
+    - Add social sharing buttons (Facebook, Twitter, LinkedIn)
+    - Show author information
+    - Implement related articles section (3 most recent)
+    - Add breadcrumb navigation
+    - _Requirements: 4.3, 4.4_
+
+- [x] 15. Create public contact page
+  - [x] 15.1 Implement PublicController contact and submitContact methods
+    - Display contact page with form
+    - Validate contact form submission (name, email, subject, message required)
+    - Store submission in database with IP address and user agent
+    - Send email notification to admin
+    - Return success message to user
+    - _Requirements: 5.1, 5.2, 5.3, 5.5_
+  - [x] 15.2 Build contact.blade.php with form and contact information
+    - Create contact form with name, email, subject, message fields
+    - Display field-specific validation errors
+    - Show success confirmation message after submission
+    - Add social media links
+    - Display alternative contact information
+    - _Requirements: 5.1, 5.2, 5.3, 5.4_
+  - [x] 15.3 Create ContactForm Livewire component with real-time validation
+    - Add properties for name, email, subject, message
+    - Implement submit() method with validation rules
+    - Add resetForm() method to clear fields after submission
+    - Display real-time validation feedback
+    - _Requirements: 5.2, 5.3_
+
+- [x] 16. Create reusable Blade components
+  - [x] 16.1 Build hero-banner component
+    - Accept image, title, subtitle, height props
+    - Implement overlay gradient for text readability
+    - Center content with max-width constraint
+    - Make responsive (full height desktop, 60vh mobile)
+    - _Requirements: 11.1, 11.5_
+  - [x] 16.2 Build initiative-card component
+    - Accept initiative object and showStats boolean props
+    - Display featured image, title, short description
+    - Show impact statistics when showStats is true
+    - Add hover effect (lift and shadow increase)
+    - _Requirements: 2.2, 2.4_
+  - [x] 16.3 Build news-card component
+    - Accept article object and featured boolean props
+    - Display featured image, title, excerpt, date
+    - Add "Read More" link
+    - Apply larger styling when featured is true
+    - _Requirements: 4.2_
+  - [x] 16.4 Build gallery-grid component
+    - Accept items collection and columns number props
+    - Render responsive grid layout
+    - Support 1/2/3 column layouts based on screen size
+    - _Requirements: 3.1_
+
+- [x] 17. Implement design system with Tailwind CSS
+  - [x] 17.1 Configure Tailwind with custom color palette
+    - Add primary-blue (#003366), accent-gold (#D4A017), secondary-blue (#007AB8) to theme
+    - Configure white, off-white, dark-grey, light-grey colors
+    - Add success, error, warning colors
+    - _Requirements: 11.2, 12.3_
+  - [x] 17.2 Configure custom typography
+    - Add Playfair Display font for headings
+    - Add Poppins font for body text
+    - Configure custom font sizes (display, h1-h4, body variants)
+    - Set line heights and letter spacing
+    - _Requirements: 1.3, 11.2_
+  - [x] 17.3 Configure custom spacing and breakpoints
+    - Add section, section-sm, card, element spacing values
+    - Verify responsive breakpoints (sm, md, lg, xl, 2xl)
+    - _Requirements: 12.1, 12.4_
+  - [x] 17.4 Create button and form component styles
+    - Style primary button (gold background, white text)
+    - Style secondary button (blue outline, blue text)
+    - Configure input height (48px minimum), focus states
+    - Style error and success messages
+    - _Requirements: 5.3, 12.3_
+
+- [x] 18. Implement responsive layouts
+  - Create public layout (resources/views/layouts/public.blade.php) with header, nav, footer
+  - Create admin layout (resources/views/layouts/admin.blade.php) with sidebar navigation
+  - Implement mobile navigation with hamburger menu
+  - Ensure all pages adapt to mobile (320px), tablet (768px), desktop (1024px+) viewports
+  - Set minimum touch target size of 44x44 pixels for mobile
+  - _Requirements: 12.1, 12.2, 12.3, 12.4_
+
+- [x] 19. Implement SEO features
+  - [x] 19.1 Add meta tags to all public pages
+    - Create meta tags partial with title, description, og tags
+    - Add unique meta title and description for each page
+    - Implement Open Graph tags for social sharing
+    - Add Twitter Card tags
+    - _Requirements: 13.1, 13.2_
+  - [x] 19.2 Implement structured data
+    - Add Person schema for homepage
+    - Add Article schema for news articles
+    - Add Organization schema in footer
+    - _Requirements: 13.2_
+  - [x] 19.3 Create XML sitemap
+    - Build sitemap route that generates XML
+    - Include all public pages, published articles, published initiatives
+    - Add lastmod dates for dynamic content
+    - _Requirements: 13.5_
+  - [x] 19.4 Optimize for search engines
+    - Use semantic HTML5 elements (header, nav, main, article, footer)
+    - Add alt attributes to all images
+    - Generate SEO-friendly URLs using slugs
+    - _Requirements: 13.2, 13.3, 13.4_
+
+- [x] 20. Implement image optimization and lazy loading
+  - Configure ImageService to generate multiple image sizes (thumbnail, medium, large)
+  - Add lazy loading attribute to gallery and news images
+  - Implement responsive images with srcset for different screen sizes
+  - Optimize image quality settings (80% JPEG quality)
+  - _Requirements: 3.4, 12.5_
+
+- [x] 21. Implement caching strategy
+  - Configure cache for pages with 1 hour TTL
+  - Cache published news articles list with 15 minutes TTL
+  - Cache gallery items by category with 30 minutes TTL
+  - Cache published initiatives with 1 hour TTL
+  - Cache unread contact count with 5 minutes TTL
+  - Implement cache invalidation on content update/delete
+  - _Requirements: 14.2_
+
+- [x] 22. Implement error handling and logging
+  - [x] 22.1 Create custom error pages
+    - Build 404.blade.php with helpful navigation and recent articles
+    - Create 500.blade.php with generic error message
+    - Build 403.blade.php with login link for admin areas
+    - _Requirements: 14.4_
+  - [x] 22.2 Configure logging channels
+    - Set up daily log channel with 7 days retention
+    - Create admin actions audit log with 30 days retention
+    - Configure security log for auth events with 90 days retention
+    - _Requirements: 14.4_
+  - [x] 22.3 Implement exception handling
+    - Log all exceptions to laravel.log
+    - Send critical errors to admin email
+    - Return JSON for API requests, render views for web requests
+    - _Requirements: 14.4_
+
+- [x] 23. Implement security measures
+  - Add rate limiting to contact form (5 submissions per hour per IP)
+  - Configure file upload validation (whitelist MIME types, 5MB max size)
+  - Implement CSRF protection on all forms
+  - Add security headers (X-Frame-Options, X-Content-Type-Options, X-XSS-Protection)
+  - Force HTTPS in production environment
+  - _Requirements: 5.2, 7.2, 8.2, 14.1_
+
+- [x] 24. Create database seeders
+  - [x] 24.1 Create AdminUserSeeder
+    - Seed default admin user with secure password
+    - Set email to configurable value from .env
+    - _Requirements: 6.1, 6.2_
+  - [x] 24.2 Create DefaultPagesSeeder
+    - Seed About page with placeholder content
+    - Seed Initiatives page with placeholder content
+    - Seed homepage hero and mission statement content
+    - _Requirements: 1.1, 2.1, 10.1, 11.2_
+
+- [x] 25. Add scroll animations
+  - Implement Intersection Observer for fade-in animations
+  - Add .fade-in class to elements that should animate
+  - Configure opacity 0→1 and translateY(20px)→0 transitions
+  - Set duration to 600ms with ease-out easing
+  - _Requirements: 11.5_
+
+- [x] 26. Implement newsletter subscription
+  - Create newsletter_subscriptions table migration
+  - Create NewsletterSubscription model
+  - Build NewsletterSubscription Livewire component with email validation
+  - Add subscription form to news page and footer
+  - _Requirements: 4.5_
+
+- [x] 27. Configure email notifications
+  - Set up mail configuration in .env
+  - Create ContactSubmissionReceived notification
+  - Send notification to admin email on new contact submission
+  - Create welcome email template for newsletter subscriptions
+  - _Requirements: 5.5_
+
+- [x] 28. Add social sharing functionality
+  - Create social-share Blade component
+  - Implement Facebook share button with Open Graph tags
+  - Add Twitter share button with proper text and hashtags
+  - Implement LinkedIn share button
+  - Add share buttons to news articles and initiatives
+  - _Requirements: 4.4_
+
+- [x] 29. Implement admin initiative management
+  - Create InitiativeController with CRUD methods
+  - Build admin initiative views (index, create, edit)
+  - Add featured image upload for initiatives
+  - Implement impact statistics JSON field editor
+  - Add sort order drag-and-drop functionality
+  - _Requirements: 2.1, 2.2, 2.3, 2.4_
+
+- [ ] 30. Set up deployment configuration
+  - [ ] 30.1 Configure environment variables
+    - Document all required .env variables in .env.example
+    - Set APP_ENV=production, APP_DEBUG=false for production
+    - Configure database credentials
+    - Set mail configuration
+    - Configure filesystem disk
+    - _Requirements: 14.1, 14.5_
+  - [ ] 30.2 Create deployment documentation
+    - Write README.md with installation instructions
+    - Document server requirements (PHP 8.2+, MySQL 8.0+, Node.js 18+)
+    - List deployment steps (composer install, migrations, seeders, storage link)
+    - Document cron job setup for scheduled tasks
+    - Add backup strategy documentation
+    - _Requirements: 14.5_
+  - [ ] 30.3 Optimize for production
+    - Configure OPcache settings
+    - Set up asset compilation with npm run build
+    - Enable Gzip compression in web server config
+    - Configure proper file permissions for storage and bootstrap/cache
+    - _Requirements: 14.2, 14.3_
