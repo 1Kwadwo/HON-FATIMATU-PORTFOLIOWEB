@@ -40,6 +40,9 @@ RUN chown -R www-data:www-data /var/www/html \
 # Copy nginx configuration
 COPY docker/nginx.conf /etc/nginx/sites-available/default
 
+# Copy PHP-FPM configuration
+COPY docker/php-fpm.conf /usr/local/etc/php-fpm.d/www.conf
+
 # Copy supervisor configuration
 COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
